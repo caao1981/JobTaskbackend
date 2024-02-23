@@ -1,0 +1,112 @@
+from create job API 
+
+ // const serviceDetails = await serviceModel.findById(order.serviceId);
+    // if (!serviceDetails) {
+    //   return res.status(400).json({
+    //     error: true,
+    //     response: "Invalid serviceId provided",
+    //     data: null,
+    //   });
+    // }
+
+    // const jsonValues = ["appliances", "specialities", "itemCategory"];
+    // let formattedHtml = `<h3>User details</h3>`;
+    // formattedHtml += `<p><strong>ID: </strong> ${req.user}</p>`;
+    // formattedHtml += `<p><strong>Full Name: </strong> ${req.fullName}</p>`;
+    // formattedHtml += `<p><strong>Phone Number: </strong> ${req.phone}</p>`;
+    // formattedHtml += `<p><strong>Email Address: </strong> ${req.email}</p>`;
+    // formattedHtml += `<p><strong>Address: </strong> ${req.address}</p>`;
+    // formattedHtml += `<p><strong>City: </strong> ${req.city}</p>`;
+    // formattedHtml += `<p><strong>Zip Code: </strong> ${req.zipCode}</p>`;
+
+    // formattedHtml += `<h3>Service details</h3>`;
+
+    // Object.keys(req.body).forEach((key) => {
+    //   if (key !== "gaurded") {
+    //     formattedHtml += `<p> <strong>${key}</strong>: ${
+    //       jsonValues.includes(key)
+    //         ? htmlFormatter(req.body[key])
+    //         : req.body[key]
+    //     }</p>`;
+    //   }
+    // });
+
+ADMIN > GET stats
+//! completed , active ,total users , owners
+
+    // startDate and endDate
+    let { startDate, endDate } = req.query;
+
+    if (!startDate || !endDate) {
+      // start date will be one month back
+      startDate = moment().subtract(1, "M");
+      endDate = moment();
+    }
+    startDate = moment(startDate).utcOffset(0);
+
+    startDate.set({
+      hour: 0,
+      minute: 0,
+      second: 0,
+      millisecond: 0,
+    });
+
+    endDate = moment(endDate).utcOffset(0);
+    endDate.set({
+      hour: 0,
+      minute: 0,
+      second: 0,
+      millisecond: 0,
+    });
+
+    const rootWhere = {
+      createdAt: {
+        $gte: new Date(startDate).toISOString(),
+        $lte: new Date(endDate).toISOString(),
+      },
+    };
+
+    const [active, completed, users, owners] = await Promise.all([
+      jobModel.count({
+        status: ACTIVE,
+        ...rootWhere,
+      }),
+      jobModel.count({
+        status: COMPLETED,
+        ...rootWhere,
+      }),
+      userModel.count({
+        ...rootWhere,
+      }),
+      ownerModel.count({
+        ...rootWhere,
+      }),
+    ]);
+
+    let apexChartData = await Payment.aggregate([
+      // {
+      //   $match:rootWhere,
+      // },
+      {
+        $group: {
+          _id: {
+            hour: { $hour: "$createdAt" },
+          },
+          amount: { $sum: "$amount" },
+        },
+      },
+      {
+        $project: {
+          _id: 0,
+          hour: "$_id.hour",
+          amount: 1,
+        },
+      },
+    ]);
+
+    let data = [];
+    let time = [];
+    apexChartData.forEach((item) => {
+      data.push(item.amount);
+      time.push(clock(item.hour));
+    });
